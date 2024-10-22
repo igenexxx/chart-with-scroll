@@ -1,0 +1,10 @@
+.chart-container {
+  width: 1200px;
+  height: 600px;
+  overflow-x: auto;
+  position: relative;
+}
+
+body {
+  height: 800px; /* Adjust to make sure the page is scrollable */
+}
