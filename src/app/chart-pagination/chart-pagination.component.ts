@@ -36,7 +36,7 @@ import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular
                }]
              },
              options: {
-               responsive: true, // Set to false to prevent chart from adapting to parent width
+               responsive: true, // Set to true to allow chart to adapt to parent width
                maintainAspectRatio: false,
                plugins: {
                  legend: {
@@ -79,13 +79,9 @@ import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular
        this.chartService.updateChart('lineChart', labels, data);
      }
 
-     @HostListener('window:scroll', ['$event'])
-     onScroll(event: Event) {
-       const target = event.target as Document;
-       const scrollPosition = target.documentElement.scrollLeft + target.defaultView!.innerWidth;
-       const scrollWidth = target.documentElement.scrollWidth;
-
-       if (scrollPosition >= scrollWidth) {
+     @HostListener('window:wheel', ['$event'])
+     onScroll(event: WheelEvent) {
+       if (event.deltaY > 0) {
          if (this.currentPage < this.dataChunks.length - 1) {
            this.currentPage++;
            this.updateChartData();
@@ -93,6 +89,9 @@ import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular
            // Fetch new data from backend (for example, another 1000 items)
            this.fetchMoreData();
          }
+       } else if (event.deltaY < 0 && this.currentPage > 0) {
+         this.currentPage--;
+         this.updateChartData();
        }
      }
 
