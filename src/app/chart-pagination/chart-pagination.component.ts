@@ -15,7 +15,8 @@ export class ChartPaginationComponent implements OnInit {
   itemsPerPage = 100;
   totalData: number[] = [];
   visibleData: number[] = [];
-  scrollBarHeight = 20;
+  scrollBarHeight = 10;
+  isDragging = false;
 
   constructor(private chartService: ChartService) {}
 
@@ -29,7 +30,7 @@ export class ChartPaginationComponent implements OnInit {
       const context = this.chartCanvas.nativeElement.getContext('2d');
       if (context) {
         this.chartService.createChart('lineChart', context, {
-          type: 'bar',
+          type: 'line',
           data: {
             labels: [],
             datasets: [{
@@ -119,11 +120,23 @@ export class ChartPaginationComponent implements OnInit {
   @HostListener('mousedown', ['$event'])
   onMouseDown(event: MouseEvent) {
     if (this.scrollCanvas && event.target === this.scrollCanvas.nativeElement) {
+      this.isDragging = true;
+    }
+  }
+
+  @HostListener('window:mouseup', ['$event'])
+  onMouseUp(event: MouseEvent) {
+    this.isDragging = false;
+  }
+
+  @HostListener('window:mousemove', ['$event'])
+  onMouseMove(event: MouseEvent) {
+    if (this.isDragging && this.scrollCanvas) {
       const canvasWidth = this.scrollCanvas.nativeElement.width;
-      const clickPosition = event.offsetX;
       const totalItems = this.totalData.length;
-      const newStartIndex = Math.floor((clickPosition / canvasWidth) * totalItems);
-      this.currentStartIndex = Math.min(newStartIndex, totalItems - this.itemsPerPage);
+      const scrollPosition = event.offsetX - this.scrollCanvas.nativeElement.getBoundingClientRect().left;
+      const newStartIndex = Math.floor((scrollPosition / canvasWidth) * totalItems);
+      this.currentStartIndex = Math.min(Math.max(newStartIndex, 0), totalItems - this.itemsPerPage);
       this.visibleData = this.totalData.slice(this.currentStartIndex, this.currentStartIndex + this.itemsPerPage);
       this.updateChartData();
     }
