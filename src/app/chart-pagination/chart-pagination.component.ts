@@ -30,7 +30,7 @@ export class ChartPaginationComponent implements OnInit {
       const context = this.chartCanvas.nativeElement.getContext('2d');
       if (context) {
         this.chartService.createChart('lineChart', context, {
-          type: 'line',
+          type: 'bar',
           data: {
             labels: [],
             datasets: [{
@@ -61,6 +61,7 @@ export class ChartPaginationComponent implements OnInit {
         this.updateChartData();
       }
     }
+    this.updateScrollCanvasWidth();
     this.drawScrollBar();
   }
 
@@ -75,12 +76,19 @@ export class ChartPaginationComponent implements OnInit {
     const labels = this.visibleData.map((_, index) => `Label ${index + 1 + this.currentStartIndex}`);
     const data = this.visibleData;
     this.chartService.updateChart('lineChart', labels, data);
+    this.updateScrollCanvasWidth();
     this.drawScrollBar();
+  }
+
+  updateScrollCanvasWidth() {
+    if (this.scrollCanvas && this.chartCanvas) {
+      this.scrollCanvas.nativeElement.width = this.chartCanvas.nativeElement.clientWidth;
+    }
   }
 
   @HostListener('window:wheel', ['$event'])
   onScroll(event: WheelEvent) {
-    const scrollStep = 10; // Number of items to scroll per wheel event
+    const scrollStep = 5; // Number of items to scroll per wheel event
     if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
       this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
     } else if (event.deltaY < 0 && this.currentStartIndex > 0) {
