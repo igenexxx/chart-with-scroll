@@ -1,4 +1,4 @@
-import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular/core';
+import { Component, OnInit, ElementRef, ViewChild, HostListener, inject } from '@angular/core';
 import { ChartService } from '../chart.service';
 
 @Component({
@@ -18,10 +18,9 @@ export class ChartPaginationComponent implements OnInit {
   scrollBarHeight = 10;
   isDragging = false;
 
-  constructor(private chartService: ChartService) {}
+  private readonly chartService = inject(ChartService);
 
   ngOnInit() {
-    // Load the initial data
     this.loadInitialData();
   }
 
@@ -41,7 +40,7 @@ export class ChartPaginationComponent implements OnInit {
           },
           options: {
             animation: false,
-            responsive: true, // Set to true to allow chart to adapt to parent width
+            responsive: true,
             maintainAspectRatio: false,
             plugins: {
               legend: {
@@ -66,7 +65,6 @@ export class ChartPaginationComponent implements OnInit {
   }
 
   loadInitialData() {
-    // Simulate a backend call to fetch 5000 items
     this.totalData = Array.from({ length: 5000 }, (_, i) => Math.floor(Math.random() * 100));
     this.visibleData = this.totalData.slice(this.currentStartIndex, this.currentStartIndex + this.itemsPerPage);
     this.updateChartData();
@@ -88,7 +86,7 @@ export class ChartPaginationComponent implements OnInit {
 
   @HostListener('window:wheel', ['$event'])
   onScroll(event: WheelEvent) {
-    const scrollStep = 5; // Number of items to scroll per wheel event
+    const scrollStep = 5;
     if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
       this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
     } else if (event.deltaY < 0 && this.currentStartIndex > 0) {
@@ -107,18 +105,14 @@ export class ChartPaginationComponent implements OnInit {
         const totalItems = this.totalData.length;
         const visibleItems = this.itemsPerPage;
 
-        // Clear the canvas
         context.clearRect(0, 0, canvasWidth, canvasHeight);
 
-        // Draw the scrollbar background
         context.fillStyle = '#e0e0e0';
         context.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Calculate the scrollbar thumb size and position
         const thumbWidth = (visibleItems / totalItems) * canvasWidth;
         const thumbPosition = (this.currentStartIndex / totalItems) * canvasWidth;
 
-        // Draw the scrollbar thumb
         context.fillStyle = '#888888';
         context.fillRect(thumbPosition, 0, thumbWidth, canvasHeight);
       }
