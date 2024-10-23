@@ -1,5 +1,6 @@
 import { Component, OnInit, ElementRef, ViewChild, HostListener } from '@angular/core';
 import { ChartService } from '../chart.service';
+import { ChartConfiguration, ChartType, ChartTypeRegistry } from 'chart.js';
 
 @Component({
   selector: 'app-chart-pagination',
@@ -15,8 +16,9 @@ export class ChartPaginationComponent implements OnInit {
   itemsPerPage = 100;
   totalData: number[] = [];
   visibleData: number[] = [];
-  scrollBarHeight = 10;
+  scrollBarSize = 10;
   isDragging = false;
+  chartType: keyof ChartTypeRegistry = 'bar'; // Default chart type
 
   constructor(private chartService: ChartService) {}
 
@@ -26,11 +28,18 @@ export class ChartPaginationComponent implements OnInit {
   }
 
   ngAfterViewInit() {
+    this.initializeChart();
+    this.updateChartData();
+    this.updateScrollCanvas();
+    this.drawScrollBar();
+  }
+
+  initializeChart() {
     if (this.chartCanvas) {
       const context = this.chartCanvas.nativeElement.getContext('2d');
       if (context) {
-        this.chartService.createChart('lineChart', context, {
-          type: 'line',
+        const chartConfig = {
+          type: this.chartType === 'bar' ? 'bar' : 'line' as keyof ChartTypeRegistry,
           data: {
             labels: [],
             datasets: [{
@@ -41,8 +50,9 @@ export class ChartPaginationComponent implements OnInit {
           },
           options: {
             animation: false,
-            responsive: true, // Set to true to allow chart to adapt to parent width
+            responsive: true,
             maintainAspectRatio: false,
+            indexAxis: (this.chartType === 'bar' ? 'y' : 'x') as 'x' | 'y',
             plugins: {
               legend: {
                 position: 'top',
@@ -57,12 +67,10 @@ export class ChartPaginationComponent implements OnInit {
               }
             }
           }
-        });
-        this.updateChartData();
+        } as ChartConfiguration<ChartType>;
+        this.chartService.createChart('chart', context, chartConfig);
       }
     }
-    this.updateScrollCanvasWidth();
-    this.drawScrollBar();
   }
 
   loadInitialData() {
@@ -75,66 +83,78 @@ export class ChartPaginationComponent implements OnInit {
   updateChartData() {
     const labels = this.visibleData.map((_, index) => `Label ${index + 1 + this.currentStartIndex}`);
     const data = this.visibleData;
-    this.chartService.updateChart('lineChart', labels, data);
-    this.updateScrollCanvasWidth();
+    this.chartService.updateChart('chart', labels, data, this.chartType);
+    this.updateScrollCanvas();
     this.drawScrollBar();
   }
 
-  updateScrollCanvasWidth() {
+  updateScrollCanvas() {
     if (this.scrollCanvas && this.chartCanvas) {
-      this.scrollCanvas.nativeElement.width = this.chartCanvas.nativeElement.clientWidth;
+      if (this.chartType === 'bar') {
+        // Vertical Scroll for Bar Chart
+        this.scrollCanvas.nativeElement.height = this.chartCanvas.nativeElement.clientHeight;
+      } else {
+        // Horizontal Scroll for Line Chart
+        this.scrollCanvas.nativeElement.width = this.chartCanvas.nativeElement.clientWidth;
+      }
     }
   }
 
   @HostListener('window:wheel', ['$event'])
   onScroll(event: WheelEvent) {
     const scrollStep = 10; // Number of items to scroll per wheel event
-    if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
-      this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
-      this.checkAndFetchMoreData();
-    } else if (event.deltaY < 0 && this.currentStartIndex > 0) {
-      this.currentStartIndex = Math.max(this.currentStartIndex - scrollStep, 0);
+    if (this.chartType === 'bar') {
+      // Vertical scroll for bar chart
+      if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
+        this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
+        this.checkAndFetchMoreData();
+      } else if (event.deltaY < 0 && this.currentStartIndex > 0) {
+        this.currentStartIndex = Math.max(this.currentStartIndex - scrollStep, 0);
+      }
+    } else {
+      // Horizontal scroll for line chart
+      if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
+        this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
+        this.checkAndFetchMoreData();
+      } else if (event.deltaY < 0 && this.currentStartIndex > 0) {
+        this.currentStartIndex = Math.max(this.currentStartIndex - scrollStep, 0);
+      }
     }
     this.visibleData = this.totalData.slice(this.currentStartIndex, this.currentStartIndex + this.itemsPerPage);
     this.updateChartData();
-  }
-
-  checkAndFetchMoreData() {
-    const threshold = 0.9 * this.totalData.length;
-    if (this.currentStartIndex >= threshold) {
-      this.fetchMoreData();
-    }
-  }
-
-  fetchMoreData() {
-    // Simulate fetching next chunk of 5000 items
-    const newData = Array.from({ length: 5000 }, (_, i) => Math.floor(Math.random() * 100));
-    this.totalData = this.totalData.concat(newData);
   }
 
   drawScrollBar() {
     if (this.scrollCanvas) {
       const context = this.scrollCanvas.nativeElement.getContext('2d');
       if (context) {
-        const canvasWidth = this.scrollCanvas.nativeElement.width;
-        const canvasHeight = this.scrollBarHeight;
+        const canvasSize = this.chartType === 'bar' ? this.scrollCanvas.nativeElement.height : this.scrollCanvas.nativeElement.width;
+        const scrollBarThickness = this.scrollBarSize;
         const totalItems = this.totalData.length;
         const visibleItems = this.itemsPerPage;
 
         // Clear the canvas
-        context.clearRect(0, 0, canvasWidth, canvasHeight);
+        context.clearRect(0, 0, this.scrollCanvas.nativeElement.width, this.scrollCanvas.nativeElement.height);
 
         // Draw the scrollbar background
         context.fillStyle = '#e0e0e0';
-        context.fillRect(0, 0, canvasWidth, canvasHeight);
+        if (this.chartType === 'bar') {
+          context.fillRect(0, 0, scrollBarThickness, canvasSize);
+        } else {
+          context.fillRect(0, 0, canvasSize, scrollBarThickness);
+        }
 
         // Calculate the scrollbar thumb size and position
-        const thumbWidth = (visibleItems / totalItems) * canvasWidth;
-        const thumbPosition = (this.currentStartIndex / totalItems) * canvasWidth;
+        const thumbSize = (visibleItems / totalItems) * canvasSize;
+        const thumbPosition = (this.currentStartIndex / totalItems) * canvasSize;
 
         // Draw the scrollbar thumb
         context.fillStyle = '#888888';
-        context.fillRect(thumbPosition, 0, thumbWidth, canvasHeight);
+        if (this.chartType === 'bar') {
+          context.fillRect(0, thumbPosition, scrollBarThickness, thumbSize);
+        } else {
+          context.fillRect(thumbPosition, 0, thumbSize, scrollBarThickness);
+        }
       }
     }
   }
@@ -155,14 +175,27 @@ export class ChartPaginationComponent implements OnInit {
   @HostListener('window:mousemove', ['$event'])
   onMouseMove(event: MouseEvent) {
     if (this.isDragging && this.scrollCanvas) {
-      const canvasWidth = this.scrollCanvas.nativeElement.width;
+      const canvasSize = this.chartType === 'bar' ? this.scrollCanvas.nativeElement.height : this.scrollCanvas.nativeElement.width;
       const totalItems = this.totalData.length;
-      const scrollPosition = event.offsetX - this.scrollCanvas.nativeElement.getBoundingClientRect().left;
-      const newStartIndex = Math.floor((scrollPosition / canvasWidth) * totalItems);
+      const scrollPosition = this.chartType === 'bar' ? event.offsetY - this.scrollCanvas.nativeElement.getBoundingClientRect().top : event.offsetX - this.scrollCanvas.nativeElement.getBoundingClientRect().left;
+      const newStartIndex = Math.floor((scrollPosition / canvasSize) * totalItems);
       this.currentStartIndex = Math.min(Math.max(newStartIndex, 0), totalItems - this.itemsPerPage);
       this.visibleData = this.totalData.slice(this.currentStartIndex, this.currentStartIndex + this.itemsPerPage);
       this.updateChartData();
       this.checkAndFetchMoreData();
     }
+  }
+
+  checkAndFetchMoreData() {
+    const threshold = 0.9 * this.totalData.length;
+    if (this.currentStartIndex >= threshold) {
+      this.fetchMoreData();
+    }
+  }
+
+  fetchMoreData() {
+    // Simulate fetching next chunk of 5000 items
+    const newData = Array.from({ length: 5000 }, (_, i) => Math.floor(Math.random() * 100));
+    this.totalData = this.totalData.concat(newData);
   }
 }
