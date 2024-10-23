@@ -18,8 +18,7 @@ export class ChartPaginationComponent implements OnInit {
   visibleData: number[] = [];
   scrollBarSize = 10;
   isDragging = false;
-  chartType: keyof ChartTypeRegistry = 'bar'; // Default chart type
-
+  chartType: keyof ChartTypeRegistry = 'bar';
   constructor(private chartService: ChartService) {}
 
   ngOnInit() {
@@ -39,7 +38,7 @@ export class ChartPaginationComponent implements OnInit {
       const context = this.chartCanvas.nativeElement.getContext('2d');
       if (context) {
         const chartConfig = {
-          type: this.chartType === 'bar' ? 'bar' : 'line' as keyof ChartTypeRegistry,
+          type: this.chartType === 'bar' ? 'bar' : 'line',
           data: {
             labels: [],
             datasets: [{
@@ -52,7 +51,7 @@ export class ChartPaginationComponent implements OnInit {
             animation: false,
             responsive: true,
             maintainAspectRatio: false,
-            indexAxis: (this.chartType === 'bar' ? 'y' : 'x') as 'x' | 'y',
+            indexAxis: (this.chartType === 'bar' ? 'y' : 'x'),
             plugins: {
               legend: {
                 position: 'top',
@@ -74,7 +73,6 @@ export class ChartPaginationComponent implements OnInit {
   }
 
   loadInitialData() {
-    // Simulate a backend call to fetch 5000 items
     this.totalData = Array.from({ length: 5000 }, (_, i) => Math.floor(Math.random() * 100));
     this.visibleData = this.totalData.slice(this.currentStartIndex, this.currentStartIndex + this.itemsPerPage);
     this.updateChartData();
@@ -91,10 +89,8 @@ export class ChartPaginationComponent implements OnInit {
   updateScrollCanvas() {
     if (this.scrollCanvas && this.chartCanvas) {
       if (this.chartType === 'bar') {
-        // Vertical Scroll for Bar Chart
         this.scrollCanvas.nativeElement.height = this.chartCanvas.nativeElement.clientHeight;
       } else {
-        // Horizontal Scroll for Line Chart
         this.scrollCanvas.nativeElement.width = this.chartCanvas.nativeElement.clientWidth;
       }
     }
@@ -102,9 +98,8 @@ export class ChartPaginationComponent implements OnInit {
 
   @HostListener('window:wheel', ['$event'])
   onScroll(event: WheelEvent) {
-    const scrollStep = 10; // Number of items to scroll per wheel event
+    const scrollStep = 10;
     if (this.chartType === 'bar') {
-      // Vertical scroll for bar chart
       if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
         this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
         this.checkAndFetchMoreData();
@@ -112,7 +107,6 @@ export class ChartPaginationComponent implements OnInit {
         this.currentStartIndex = Math.max(this.currentStartIndex - scrollStep, 0);
       }
     } else {
-      // Horizontal scroll for line chart
       if (event.deltaY > 0 && this.currentStartIndex + this.itemsPerPage < this.totalData.length) {
         this.currentStartIndex = Math.min(this.currentStartIndex + scrollStep, this.totalData.length - this.itemsPerPage);
         this.checkAndFetchMoreData();
@@ -133,10 +127,8 @@ export class ChartPaginationComponent implements OnInit {
         const totalItems = this.totalData.length;
         const visibleItems = this.itemsPerPage;
 
-        // Clear the canvas
         context.clearRect(0, 0, this.scrollCanvas.nativeElement.width, this.scrollCanvas.nativeElement.height);
 
-        // Draw the scrollbar background
         context.fillStyle = '#e0e0e0';
         if (this.chartType === 'bar') {
           context.fillRect(0, 0, scrollBarThickness, canvasSize);
@@ -144,11 +136,9 @@ export class ChartPaginationComponent implements OnInit {
           context.fillRect(0, 0, canvasSize, scrollBarThickness);
         }
 
-        // Calculate the scrollbar thumb size and position
         const thumbSize = (visibleItems / totalItems) * canvasSize;
         const thumbPosition = (this.currentStartIndex / totalItems) * canvasSize;
 
-        // Draw the scrollbar thumb
         context.fillStyle = '#888888';
         if (this.chartType === 'bar') {
           context.fillRect(0, thumbPosition, scrollBarThickness, thumbSize);
@@ -194,7 +184,6 @@ export class ChartPaginationComponent implements OnInit {
   }
 
   fetchMoreData() {
-    // Simulate fetching next chunk of 5000 items
     const newData = Array.from({ length: 5000 }, (_, i) => Math.floor(Math.random() * 100));
     this.totalData = this.totalData.concat(newData);
   }
