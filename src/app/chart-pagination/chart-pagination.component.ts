@@ -30,7 +30,7 @@ export class ChartPaginationComponent implements OnInit {
       const context = this.chartCanvas.nativeElement.getContext('2d');
       if (context) {
         this.chartService.createChart('lineChart', context, {
-          type: 'bar',
+          type: 'line',
           data: {
             labels: [],
             datasets: [{
@@ -143,6 +143,7 @@ export class ChartPaginationComponent implements OnInit {
   onMouseDown(event: MouseEvent) {
     if (this.scrollCanvas && event.target === this.scrollCanvas.nativeElement) {
       this.isDragging = true;
+      this.checkAndFetchMoreData();
     }
   }
 
@@ -161,6 +162,7 @@ export class ChartPaginationComponent implements OnInit {
       this.currentStartIndex = Math.min(Math.max(newStartIndex, 0), totalItems - this.itemsPerPage);
       this.visibleData = this.totalData.slice(this.currentStartIndex, this.currentStartIndex + this.itemsPerPage);
       this.updateChartData();
+      this.checkAndFetchMoreData();
     }
   }
 }
